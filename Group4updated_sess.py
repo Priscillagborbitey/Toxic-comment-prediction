@@ -17,7 +17,6 @@ import seaborn as sns
 import streamlit as st
 
 from gensim.models import FastText
-from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -28,7 +27,15 @@ from sklearn.metrics import (
 )
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
+import nltk
 
+# This downloads the stopwords file so your app can use it
+nltk.download('stopwords', quiet=True)
+
+from nltk.corpus import stopwords
+
+# Create a set of English stopwords
+stop_words = set(stopwords.words("english"))
 # Optional wordcloud
 try:
     from wordcloud import WordCloud
@@ -36,9 +43,9 @@ try:
 except Exception:
     WORDCLOUD_AVAILABLE = False
 
-# =========================
+
 # Page config (+ creative menu)
-# =========================
+
 st.set_page_config(
     page_title="Toxic Comment Detection",
     page_icon="🧪",
@@ -51,18 +58,18 @@ st.set_page_config(
     },
 )
 
-# =========================
+
 # Constants & paths
-# =========================
+
 LABEL_COLS = ["toxic","severe_toxic","obscene","threat","insult","identity_hate"]
 TEXT_COL = "comment_text"
 ROOT = Path(__file__).parent
 TRAIN_PATH = ROOT / "train.csv"
 TEST_PATH  = ROOT / "test.csv"
 
-# =========================
+
 # CSS (scoped; no global layout overrides across pages)
-# =========================
+
 st.markdown("""
 <style>
 /* Sidebar cosmetics */
@@ -130,9 +137,9 @@ hr { border:none; height:1px; background:linear-gradient(90deg,#0000,#e5e7eb,#00
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
+
 # Initialize session state
-# =========================
+
 def init_state():
     keys_defaults = {
         "train_df": None,
@@ -156,9 +163,9 @@ def init_state():
 
 init_state()
 
-# =========================
+
 # Data loading & preprocessing
-# =========================
+
 stop_words = set(stopwords.words("english"))
 stop_words.update({'article','wikipedia','page','edit','talk','user','please','thanks','thank'})
 stemmer = PorterStemmer()
@@ -227,9 +234,9 @@ def preprocess_into_state():
     st.session_state.clean_train = tr
     st.session_state.clean_test  = te
 
-# =========================
+
 # Embeddings & models
-# =========================
+
 def train_or_load_fasttext(sentences: List[List[str]]) -> FastText:
     model_path = ROOT / "fasttext_model.bin"
     if model_path.exists():
@@ -268,9 +275,9 @@ def train_or_load_models(X_train: np.ndarray, y_train: np.ndarray) -> Tuple[Any,
     joblib.dump(rf, str(rf_path))
     return lr, rf
 
-# =========================
+
 # Evaluation utilities (multi-label)
-# =========================
+
 def per_label_confusion(y_true_bin: np.ndarray, y_pred_bin: np.ndarray) -> np.ndarray:
     """
     Return 2x2 confusion matrix for a single label: [[TN, FP],[FN, TP]]
@@ -313,9 +320,9 @@ def compute_rocs(
         rocs[label] = {"fpr": fpr, "tpr": tpr, "auc": auc(fpr, tpr)}
     return rocs
 
-# =========================
+
 # Visualization helpers
-# =========================
+
 def label_pill(name: str, on: int, prob: Optional[float]=None) -> str:
     cls = "on" if int(on)==1 else "off"
     conf = f' <span class="mono">({prob:.2f})</span>' if prob is not None else ""
@@ -439,9 +446,9 @@ def plot_roc_curves_per_label(roc_dict: Dict[str, Dict[str, np.ndarray]], model_
     diag = alt.Chart(pd.DataFrame({"x":[0,1], "y":[0,1]})).mark_line(strokeDash=[4,4]).encode(x="x", y="y")
     st.altair_chart(line + diag, use_container_width=True)
 
-# =========================
+
 # Sidebar menu (selectbox + status chips)
-# =========================
+
 def sidebar_nav():
     st.sidebar.markdown('<div class="sb-header">🧭 Menu</div>', unsafe_allow_html=True)
     st.sidebar.markdown('<div class="sb-subtle">Jump to a section</div>', unsafe_allow_html=True)
@@ -484,9 +491,9 @@ def sidebar_nav():
     st.sidebar.caption("FastText ➜ LR / RF • cached • interactive visuals")
     return page
 
-# =========================
+
 # Pages
-# =========================
+
 def page_home():
     st.markdown('<div class="home-root">', unsafe_allow_html=True)
     st.markdown("""
@@ -927,3 +934,4 @@ st.markdown("""
   📊 <strong>Toxic Comment Detection</strong> — Built by <strong>Group 4</strong> · University of Ghana
 </div>
 """, unsafe_allow_html=True)
+
