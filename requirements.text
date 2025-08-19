@@ -1,5 +1,5 @@
 altair
-joblib
+joblib==1.5.1
 matplotlib
 numpy
 pandas
